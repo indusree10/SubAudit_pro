@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SubAudit Pro — Subscription & Expense Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0d14;
+    --bg2: #0f1320;
+    --bg3: #141828;
+    --surface: #1a1f30;
+    --surface2: #202540;
+    --border: #252d45;
+    --border2: #313d60;
+    --text: #e8eaf6;
+    --text2: #8892b0;
+    --text3: #4a5578;
+    --blue: #4f8ef7;
+    --blue2: #6aa3f8;
+    --green: #22d3a0;
+    --amber: #f5a623;
+    --red: #f87171;
+    --purple: #a78bfa;
+    --pink: #f472b6;
+    --card-radius: 16px;
+    --btn-radius: 10px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+  /* ─── LAYOUT ─── */
+  .layout { display: flex; min-height: 100vh; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 240px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 50;
+    transition: transform .3s ease;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .logo-box {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .logo-text { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+  .logo-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+
+  .nav-section { padding: 0 12px; margin-bottom: 6px; }
+  .nav-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; padding: 0 8px; margin-bottom: 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    cursor: pointer; font-size: 13px; font-weight: 500;
+    color: var(--text2); transition: all .15s;
+    border: none; background: none; width: 100%;
+    text-align: left; font-family: 'Space Grotesk', sans-serif;
+  }
+  .nav-item:hover { background: var(--surface); color: var(--text); }
+  .nav-item.active { background: rgba(79,142,247,.15); color: var(--blue); }
+  .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-item .nav-badge {
+    margin-left: auto; background: var(--red);
+    color: #fff; font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 99px;
+  }
+
+  .sidebar-bottom {
+    margin-top: auto; padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .ai-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--green);
+    background: rgba(34,211,160,.08);
+    border: 1px solid rgba(34,211,160,.2);
+    padding: 8px 12px; border-radius: 10px;
+  }
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
+
+  /* ─── MAIN ─── */
+  .main { margin-left: 240px; flex: 1; min-height: 100vh; }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 40;
+  }
+  .topbar-left h1 { font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+  .topbar-left p { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  /* ─── CONTENT ─── */
+  .content { padding: 24px 28px; }
+
+  /* ─── METRICS GRID ─── */
+  .metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    padding: 18px 20px;
+    position: relative; overflow: hidden;
+    transition: border-color .2s, transform .2s;
+    cursor: default;
+  }
+  .metric-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .metric-card::after {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px; border-radius: 16px 16px 0 0;
+  }
+  .mc-blue::after { background: linear-gradient(90deg,#4f8ef7,#a78bfa); }
+  .mc-red::after { background: linear-gradient(90deg,#f87171,#f472b6); }
+  .mc-amber::after { background: linear-gradient(90deg,#f5a623,#facc15); }
+  .mc-green::after { background: linear-gradient(90deg,#22d3a0,#4ade80); }
+  .mc-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; }
+  .mc-value { font-size: 28px; font-weight: 700; letter-spacing: -.03em; font-family: 'JetBrains Mono', monospace; line-height: 1; margin-bottom: 4px; }
+  .mc-hint { font-size: 11px; color: var(--text3); }
+  .mc-icon { position: absolute; top: 18px; right: 18px; font-size: 22px; opacity: .35; }
+
+  /* ─── GRID LAYOUTS ─── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .col-span-2 { grid-column: span 2; }
+
+  /* ─── CARD ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    padding: 20px;
+  }
+  .card-title {
+    font-size: 13px; font-weight: 600; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .07em;
+    margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title-val { font-size: 14px; font-weight: 700; color: var(--text); text-transform: none; letter-spacing: 0; }
+
+  /* ─── SUBSCRIPTION ITEM ─── */
+  .sub-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 10px; border-radius: 10px;
+    transition: background .15s; cursor: default;
+    margin: 0 -10px;
+  }
+  .sub-item:hover { background: var(--surface2); }
+  .sub-item + .sub-item { border-top: 1px solid var(--border); margin-top: 1px; }
+  .sub-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .sub-info { flex: 1; min-width: 0; }
+  .sub-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .sub-price { font-size: 14px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--text); white-space: nowrap; }
+  .sub-price span { font-size: 10px; color: var(--text3); }
+  .sub-actions { display: flex; gap: 4px; margin-left: 4px; }
+
+  /* ─── TAG ─── */
+  .tag {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10px; font-weight: 600; padding: 2px 8px;
+    border-radius: 99px; text-transform: uppercase; letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .tag-red    { background: rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.25); }
+  .tag-amber  { background: rgba(245,166,35,.12);  color:#f5a623; border:1px solid rgba(245,166,35,.25); }
+  .tag-green  { background: rgba(34,211,160,.12);  color:#22d3a0; border:1px solid rgba(34,211,160,.25); }
+  .tag-blue   { background: rgba(79,142,247,.12);  color:#4f8ef7; border:1px solid rgba(79,142,247,.25); }
+  .tag-purple { background: rgba(167,139,250,.12); color:#a78bfa; border:1px solid rgba(167,139,250,.25); }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    padding: 8px 16px; border-radius: var(--btn-radius);
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--text2); font-size: 12px; font-weight: 500;
+    cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+    transition: all .15s; white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface2); color: var(--text); }
+  .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn-primary:hover { background: var(--blue2); box-shadow: 0 0 20px rgba(79,142,247,.3); }
+  .btn-red { background: rgba(248,113,113,.12); color: var(--red); border-color: rgba(248,113,113,.3); }
+  .btn-red:hover { background: rgba(248,113,113,.22); }
+  .btn-green { background: rgba(34,211,160,.12); color: var(--green); border-color: rgba(34,211,160,.3); }
+  .btn-green:hover { background: rgba(34,211,160,.22); }
+  .icon-btn {
+    background: none; border: none; cursor: pointer;
+    padding: 5px 7px; border-radius: 7px; color: var(--text3);
+    font-size: 14px; transition: all .15s;
+  }
+  .icon-btn:hover { background: rgba(248,113,113,.15); color: var(--red); }
+
+  /* ─── PROGRESS ─── */
+  .progress { height: 6px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 99px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+
+  /* ─── ALERT ITEMS ─── */
+  .alert-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px; border-radius: 12px; margin-bottom: 8px;
+    border-left: 3px solid;
+  }
+  .alert-item:last-child { margin-bottom: 0; }
+  .alert-urgent { background: rgba(248,113,113,.06); border-color: var(--red); }
+  .alert-warn   { background: rgba(245,166,35,.06);  border-color: var(--amber); }
+  .alert-info   { background: rgba(79,142,247,.06);  border-color: var(--blue); }
+  .alert-title  { font-size: 13px; font-weight: 600; color: var(--text); }
+  .alert-sub    { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  /* ─── SAVINGS ITEM ─── */
+  .saving-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; background: var(--bg3); border-radius: 12px;
+    margin-bottom: 8px; transition: background .15s; cursor: default;
+  }
+  .saving-item:hover { background: var(--surface2); }
+  .saving-item:last-child { margin-bottom: 0; }
+  .saving-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+
+  /* ─── CHART WRAPPERS ─── */
+  .chart-wrap { position: relative; }
+
+  /* ─── AI CHAT ─── */
+  .chat-wrap {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    min-height: 300px; max-height: 400px; overflow-y: auto;
+  }
+  .msg {
+    padding: 11px 15px; border-radius: 12px;
+    font-size: 13px; line-height: 1.55; max-width: 85%;
+  }
+  .msg-bot { background: var(--surface2); color: var(--text); border-radius: 12px 12px 12px 3px; }
+  .msg-user { background: var(--blue); color: #fff; margin-left: auto; border-radius: 12px 12px 3px 12px; }
+  .typing-indicator { display: flex; gap: 5px; padding: 11px 15px; background: var(--surface2); border-radius: 12px; width: fit-content; }
+  .typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text2); animation: bounce .9s infinite; }
+  .typing-dot:nth-child(2){animation-delay:.15s} .typing-dot:nth-child(3){animation-delay:.3s}
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-7px)} }
+  .chat-input-row { display: flex; gap: 8px; margin-top: 8px; }
+  .chat-inp {
+    flex: 1; background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 10px 14px; color: var(--text);
+    font-size: 13px; font-family: 'Space Grotesk', sans-serif; outline: none;
+    transition: border-color .15s;
+  }
+  .chat-inp:focus { border-color: var(--blue); }
+  .chat-inp::placeholder { color: var(--text3); }
+  .chat-send {
+    background: var(--blue); border: none; border-radius: 12px;
+    padding: 10px 18px; color: #fff; cursor: pointer;
+    font-size: 13px; font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif; transition: all .15s;
+  }
+  .chat-send:hover { background: var(--blue2); }
+  .chat-send:disabled { opacity: .5; cursor: not-allowed; }
+  .quick-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .quick-btn {
+    padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 500;
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text2); cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+    transition: all .15s;
+  }
+  .quick-btn:hover { background: rgba(79,142,247,.15); color: var(--blue); border-color: rgba(79,142,247,.3); }
+
+  /* ─── FORM INPUTS ─── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; display: block; }
+  .form-inp {
+    width: 100%; background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 10px 14px; color: var(--text);
+    font-size: 13px; font-family: 'Space Grotesk', sans-serif; outline: none;
+    transition: border-color .15s;
+  }
+  .form-inp:focus { border-color: var(--blue); }
+  .form-inp::placeholder { color: var(--text3); }
+  select.form-inp { cursor: pointer; }
+  textarea.form-inp { resize: vertical; min-height: 100px; }
+
+  /* ─── MODAL ─── */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; backdrop-filter: blur(6px);
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 28px; width: 380px; max-width: 95vw;
+    box-shadow: 0 32px 100px rgba(0,0,0,.7);
+    animation: modalIn .2s ease;
+  }
+  @keyframes modalIn { from{opacity:0;transform:translateY(16px) scale(.97)} to{opacity:1;transform:none} }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .modal-title { font-size: 17px; font-weight: 700; }
+  .modal-close { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--text2); padding: 2px 6px; border-radius: 6px; }
+  .modal-close:hover { color: var(--text); background: var(--surface2); }
+
+  /* ─── HEALTH SCORE ─── */
+  .score-display { text-align: center; padding: 28px 0 20px; }
+  .score-number { font-size: 72px; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; margin-bottom: 8px; }
+  .score-label { font-size: 14px; color: var(--text2); margin-bottom: 20px; }
+  .score-bar { height: 12px; background: var(--bg3); border-radius: 99px; overflow: hidden; margin-bottom: 24px; }
+  .score-fill { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+
+  /* ─── BADGES ─── */
+  .badges-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .badge-item {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 14px 10px; border-radius: 12px; text-align: center;
+    border: 1px solid; transition: all .2s;
+  }
+  .badge-earned { background: rgba(34,211,160,.08); border-color: rgba(34,211,160,.25); }
+  .badge-locked { background: var(--bg3); border-color: var(--border); opacity: .4; }
+  .badge-icon { font-size: 26px; }
+  .badge-name { font-size: 11px; font-weight: 600; }
+  .badge-earned .badge-name { color: var(--green); }
+  .badge-locked .badge-name { color: var(--text2); }
+
+  /* ─── IMPORT ZONE ─── */
+  .drop-zone {
+    border: 2px dashed var(--border2); border-radius: 14px;
+    padding: 36px 24px; text-align: center; cursor: pointer;
+    transition: all .2s; margin-bottom: 14px;
+  }
+  .drop-zone:hover { border-color: var(--blue); background: rgba(79,142,247,.04); }
+  .drop-icon { font-size: 36px; margin-bottom: 10px; }
+  .drop-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .drop-sub { font-size: 12px; color: var(--text2); }
+
+  /* ─── TOAST ─── */
+  .toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 12px 18px; font-size: 13px;
+    font-weight: 500; max-width: 300px; box-shadow: 0 8px 30px rgba(0,0,0,.4);
+    animation: toastIn .3s ease; display: flex; align-items: center; gap: 8px;
+  }
+  @keyframes toastIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+  .toast-green { border-color: rgba(34,211,160,.4); }
+  .toast-red { border-color: rgba(248,113,113,.4); }
+  .toast-blue { border-color: rgba(79,142,247,.4); }
+
+  /* ─── EMPTY STATE ─── */
+  .empty { text-align: center; padding: 30px; color: var(--text3); font-size: 13px; }
+
+  /* ─── SECTION HEADER ─── */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .section-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+
+  /* ─── HEALTH METRIC ROW ─── */
+  .health-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .health-label { font-size: 12px; color: var(--text2); width: 120px; flex-shrink: 0; }
+  .health-val { font-size: 13px; font-weight: 600; font-family: 'JetBrains Mono', monospace; width: 40px; text-align: right; flex-shrink: 0; }
+
+  /* ─── SPEND TABLE ─── */
+  .spend-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .spend-label { font-size: 12px; color: var(--text2); width: 110px; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
+  .spend-val { font-size: 12px; font-weight: 600; font-family: 'JetBrains Mono', monospace; width: 44px; text-align: right; flex-shrink: 0; }
+
+  /* ─── MOBILE ─── */
+  .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--text); font-size: 22px; }
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: none; }
+    .main { margin-left: 0; }
+    .hamburger { display: block; }
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .col-span-2 { grid-column: span 1; }
+    .content { padding: 16px; }
+    .topbar { padding: 14px 16px; }
+  }
+  @media (max-width: 520px) {
+    .metrics-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ─── ANIMATIONS ─── */
+  .fade-in { animation: fadeIn .4s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-box">💰</div>
+      <div>
+        <div class="logo-text">SubAudit Pro</div>
+        <div class="logo-sub">Expense Intelligence</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <button class="nav-item active" onclick="navigate('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</button>
+      <button class="nav-item" onclick="navigate('subscriptions',this)"><span class="nav-icon">📋</span>Subscriptions</button>
+      <button class="nav-item" id="nav-vampires" onclick="navigate('vampires',this)"><span class="nav-icon">🧛</span>Vampire Subs</button>
+      <button class="nav-item" onclick="navigate('renewals',this)"><span class="nav-icon">🔔</span>Renewals</button>
+    </div>
+
+    <div class="nav-section" style="margin-top:8px">
+      <div class="nav-label">Tools</div>
+      <button class="nav-item" onclick="navigate('ai',this)"><span class="nav-icon">🤖</span>AI Advisor</button>
+      <button class="nav-item" onclick="navigate('import',this)"><span class="nav-icon">📥</span>Import Data</button>
+      <button class="nav-item" onclick="navigate('health',this)"><span class="nav-icon">❤️</span>Health Score</button>
+      <button class="nav-item" onclick="navigate('analytics',this)"><span class="nav-icon">📈</span>Analytics</button>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="ai-status"><div class="pulse-dot"></div>ChatGPT Active</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:14px">
+        <button class="hamburger" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <div class="topbar-left">
+          <h1 id="page-title">Dashboard</h1>
+          <p id="page-sub">Welcome back — here's your monthly overview</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace" id="topbar-total"></div>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add Subscription</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div id="page-content" class="fade-in"></div>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Subscription</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Service name</label>
+      <input class="form-inp" id="inp-name" placeholder="e.g. Netflix, Spotify, Adobe CC…">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label class="form-label">Monthly price ($)</label>
+        <input class="form-inp" id="inp-price" type="number" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Renewal day</label>
+        <input class="form-inp" id="inp-day" type="number" min="1" max="31" placeholder="1–31">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select class="form-inp" id="inp-cat">
+        <option>Entertainment</option><option>Fitness</option><option>Music</option>
+        <option>Software</option><option>Cloud</option><option>Productivity</option><option>Education</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addSub()">Add Subscription</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+document.getElementById('add-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+</script>
+
+<script>
+// ══════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════
+const CAT_COLORS = {Entertainment:'#f87171',Fitness:'#fb923c',Music:'#4ade80',Software:'#a78bfa',Cloud:'#60a5fa',Productivity:'#f472b6',Education:'#facc15'};
+const CAT_ICONS  = {Entertainment:'🎬',Fitness:'💪',Music:'🎵',Software:'💻',Cloud:'☁️',Productivity:'⚡',Education:'📚'};
+
+let SUBS = JSON.parse(localStorage.getItem('subs_pro') || 'null') || [
+  {id:1, name:'Netflix',           price:15.99, cat:'Entertainment', icon:'🎬', color:'#f87171', day:15, lastUsed:2,   active:true},
+  {id:2, name:'Gym Membership',  price:45.00, cat:'Fitness',       icon:'💪', color:'#fb923c', day:28, lastUsed:62,  active:true},
+  {id:3, name:'Spotify',           price:10.99, cat:'Music',           icon:'🎵', color:'#4ade80', day:5,  lastUsed:1,   active:true},
+  {id:4, name:'Adobe CC',          price:20.99, cat:'Software',       icon:'💻', color:'#a78bfa', day:20, lastUsed:4,   active:true},
+  {id:5, name:'Dropbox',           price:9.99,  cat:'Cloud',           icon:'☁️', color:'#60a5fa', day:12, lastUsed:7,   active:true},
+  {id:6, name:'Audible',           price:14.95, cat:'Entertainment', icon:'🎧', color:'#f87171', day:10, lastUsed:145, active:true},
+  {id:7, name:'Paramount+',        price:5.99,  cat:'Entertainment', icon:'📺', color:'#f87171', day:22, lastUsed:88,  active:true},
+  {id:8, name:'Hulu',              price:17.99, cat:'Entertainment', icon:'📽️', color:'#f87171', day:9,  lastUsed:5,   active:true},
+  {id:9, name:'iCloud 50GB',       price:0.99,  cat:'Cloud',           icon:'☁️', color:'#60a5fa', day:3,  lastUsed:0,   active:true},
+  {id:10,name:'Notion',            price:8.00,  cat:'Productivity',   icon:'⚡', color:'#f472b6', day:25, lastUsed:3,   active:true},
+  {id:11,name:'YouTube Premium', price:13.99, cat:'Entertainment', icon:'▶️', color:'#f87171', day:18, lastUsed:1,   active:true},
+  {id:12,name:'Duolingo Plus',   price:6.99,  cat:'Education',      icon:'📚', color:'#facc15', day:14, lastUsed:28,  active:true},
+];
+
+let currentPage = 'dashboard';
+let chartInstances = {};
+let aiMessages = [{role:'bot', text:"👋 Hi! I'm your ChatGPT financial advisor. I know your subscriptions and can help you find waste, suggest bundles, and save money. Ask me anything!"}];
+let aiLoading = false;
+
+// API CONFIG - CHATGPT
+const OPENAI_API_KEY = 'sk-YOUR-OPENAI-KEY-HERE'; // REPLACE WITH YOUR KEY
+const API_URL = "https://api.openai.com/v1/chat/completions";
+
+function save() { try { localStorage.setItem('subs_pro', JSON.stringify(SUBS)); } catch(e){} }
+function active() { return SUBS.filter(s => s.active); }
+function total()  { return active().reduce((a,s) => a+s.price, 0); }
+function vampires() { return active().filter(s => s.lastUsed > 30); }
+function upcoming() {
+  const t = new Date().getDate();
+  return active().filter(s => { const d = s.day - t; return d >= 0 && d <= 7; });
+}
+function healthScore() {
+  let sc = 100;
+  vampires().forEach(() => sc -= 7);
+  if (active().length > 10) sc -= 5;
+  const cats = new Set(active().map(s => s.cat)).size;
+  if (cats > 5) sc -= 5;
+  return Math.max(20, Math.min(100, sc));
+}
+function catBreakdown() {
+  const c = {};
+  active().forEach(s => { c[s.cat] = (c[s.cat]||0) + s.price; });
+  return c;
+}
+function updateNav() {
+  const vc = vampires().length;
+  const nb = document.getElementById('nav-vampires');
+  if (nb) {
+    nb.innerHTML = `<span class="nav-icon">🧛</span>Vampire Subs${vc>0?`<span class="nav-badge">${vc}</span>`:''}`;
+  }
+  const tt = document.getElementById('topbar-total');
+  if (tt) tt.textContent = `$${total().toFixed(2)}/mo`;
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+const PAGE_META = {
+  dashboard:     { title:'Dashboard',        sub:'Welcome back — here\'s your monthly overview' },
+  subscriptions: { title:'All Subscriptions', sub:'Manage and review all your recurring charges' },
+  vampires:      { title:'Vampire Subscriptions', sub:'Unused services draining your wallet' },
+  renewals:      { title:'Upcoming Renewals', sub:'Subscriptions renewing in the next 30 days' },
+  ai:            { title:'ChatGPT Advisor',        sub:'Powered by OpenAI — your personal finance AI' },
+  import:        { title:'Import Data',      sub:'Auto-detect subscriptions from CSV or screenshots' },
+  health:        { title:'Health Score',     sub:'Your subscription financial health report' },
+  analytics:     { title:'Analytics',         sub:'Spending trends, projections, and insights' },
+};
+
+function navigate(page, el) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const meta = PAGE_META[page] || {};
+  document.getElementById('page-title').textContent = meta.title || page;
+  document.getElementById('page-sub').textContent = meta.sub || '';
+  destroyCharts();
+  const pc = document.getElementById('page-content');
+  pc.className = 'fade-in';
+  void pc.offsetWidth;
+  renderPage(page);
+  updateNav();
+  // close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function renderPage(page) {
+  const el = document.getElementById('page-content');
+  switch(page) {
+    case 'dashboard':     el.innerHTML = dashboardHTML(); afterDashboard(); break;
+    case 'subscriptions': el.innerHTML = subsHTML(); break;
+    case 'vampires':      el.innerHTML = vampiresHTML(); break;
+    case 'renewals':      el.innerHTML = renewalsHTML(); break;
+    case 'ai':            el.innerHTML = aiHTML(); scrollChat(); break;
+    case 'import':        el.innerHTML = importHTML(); break;
+    case 'health':        el.innerHTML = healthHTML(); break;
+    case 'analytics':     el.innerHTML = analyticsHTML(); afterAnalytics(); break;
+  }
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+function dashboardHTML() {
+  const t = total(), v = vampires(), u = upcoming(), sc = healthScore();
+  const cats = catBreakdown();
+  const catKeys = Object.keys(cats).sort((a,b) => cats[b]-cats[a]);
+  const catTotal = Object.values(cats).reduce((a,b)=>a+b,0);
+
+  return `
+  <div class="metrics-grid">
+    <div class="metric-card mc-blue">
+      <div class="mc-icon">💳</div>
+      <div class="mc-label">Monthly Burn</div>
+      <div class="mc-value" style="color:var(--blue)">$${t.toFixed(2)}</div>
+      <div class="mc-hint">$${(t*12).toFixed(0)} projected yearly</div>
+    </div>
+    <div class="metric-card mc-red">
+      <div class="mc-icon">🧛</div>
+      <div class="mc-label">Vampire Subs</div>
+      <div class="mc-value" style="color:var(--red)">${v.length}</div>
+      <div class="mc-hint">$${v.reduce((a,s)=>a+s.price,0).toFixed(2)}/mo wasted</div>
+    </div>
+    <div class="metric-card mc-amber">
+      <div class="mc-icon">🔔</div>
+      <div class="mc-label">Renewals (7d)</div>
+      <div class="mc-value" style="color:var(--amber)">${u.length}</div>
+      <div class="mc-hint">${u.length > 0 ? u.map(s=>s.name).slice(0,2).join(', ') : 'None soon'}</div>
+    </div>
+    <div class="metric-card mc-green">
+      <div class="mc-icon">❤️</div>
+      <div class="mc-label">Health Score</div>
+      <div class="mc-value" style="color:${sc>=80?'var(--green)':sc>=60?'var(--amber)':'var(--red)'}">${sc}</div>
+      <div class="mc-hint">${sc>=80?'Excellent!':sc>=60?'Room to improve':'Needs attention'}</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Subscription Overview <span class="card-title-val">${active().length} active</span></div>
+      ${active().slice(0,7).map(s => subRowHTML(s)).join('')}
+      <button class="btn" style="width:100%;margin-top:12px" onclick="navigate('subscriptions',document.querySelectorAll('.nav-item')[1])">View all ${active().length} subscriptions →</button>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Spending Breakdown</div>
+        <div class="chart-wrap" style="height:180px"><canvas id="donut-chart"></canvas></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px">
+          ${catKeys.map(c=>`<span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:8px;height:8px;border-radius:2px;background:${CAT_COLORS[c]||'#888'}"></span>${CAT_ICONS[c]||''} ${c} <b style="color:var(--text);margin-left:2px">${Math.round(cats[c]/catTotal*100)}%</b></span>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">AI Savings Ideas <span class="card-title-val" style="color:var(--green)">Save $${(vampires().reduce((a,s)=>a+s.price,0)+16).toFixed(0)}/mo</span></div>
+        ${savingsItemHTML('🎯','rgba(34,211,160,.12)','Bundle streaming services','Disney+/Hulu bundle replaces separate subs','tag-green','Save $10/mo')}
+        ${savingsItemHTML('☁️','rgba(96,165,250,.12)','Consolidate cloud storage','Merge iCloud + Dropbox into one plan','tag-blue','Save $6/mo')}
+        ${savingsItemHTML('🧛','rgba(248,113,113,.12)','Cancel '+v.length+' vampire sub'+(v.length!==1?'s':''),'Zero usage detected on these services','tag-red','Save $'+v.reduce((a,s)=>a+s.price,0).toFixed(0)+'/mo')}
+        <button class="btn" style="width:100%;margin-top:10px" onclick="navigate('ai',document.querySelectorAll('.nav-item')[4])">Ask AI for personalized advice →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🧛 Vampire Subscriptions</div>
+      ${v.length === 0 ? `<div style="color:var(--green);text-align:center;padding:20px;font-size:13px">✅ No unused subscriptions found!</div>` : ''}
+      ${v.map(s=>`
+        <div class="alert-item alert-urgent">
+          <span style="font-size:20px">${s.icon}</span>
+          <div style="flex:1">
+            <div class="alert-title">${s.name}</div>
+            <div class="alert-sub">Not used in ${s.lastUsed} days · $${s.price.toFixed(2)}/mo</div>
+          </div>
+          <button class="btn btn-red" onclick="cancelSub(${s.id})" style="padding:5px 12px;font-size:11px">Cancel</button>
+        </div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="card-title">🔔 Upcoming Renewals</div>
+      ${u.length === 0 ? `<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">No renewals in the next 7 days</div>` : ''}
+      ${u.map(s=>{const d=s.day-new Date().getDate();return`
+        <div class="alert-item ${d<=2?'alert-urgent':'alert-warn'}">
+          <span style="font-size:20px">${s.icon}</span>
+          <div style="flex:1">
+            <div class="alert-title">${s.name}</div>
+            <div class="alert-sub">${d===0?'Renewing today!':d===1?'Renewing tomorrow':`Renewing in ${d} days`} · $${s.price.toFixed(2)}</div>
+          </div>
+          <span class="tag ${d<=2?'tag-red':'tag-amber'}">${d===0?'Today!':d+'d'}</span>
+        </div>`}).join('')}
+      ${active().filter(s=>{const d=s.day-new Date().getDate();return d>7&&d<=21;}).slice(0,3).map(s=>`
+        <div class="sub-item">
+          <div class="sub-icon" style="background:${s.color}20;color:${s.color};font-size:16px">${s.icon}</div>
+          <div class="sub-info"><div class="sub-name">${s.name}</div><div class="sub-meta">Day ${s.day} of month</div></div>
+          <div class="sub-price">$${s.price.toFixed(2)}<span>/mo</span></div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function subRowHTML(s) {
+  return `<div class="sub-item">
+    <div class="sub-icon" style="background:${s.color}22;color:${s.color}">${s.icon}</div>
+    <div class="sub-info">
+      <div class="sub-name">${s.name}</div>
+      <div class="sub-meta">${s.cat} · day ${s.day}</div>
+    </div>
+    ${s.lastUsed>60?`<span class="tag tag-red">🧛 Dead</span>`:s.lastUsed>30?`<span class="tag tag-amber">Unused</span>`:s.lastUsed<=3?`<span class="tag tag-green">Active</span>`:''}
+    <div class="sub-price">$${s.price.toFixed(2)}<span>/mo</span></div>
+    <div class="sub-actions"><button class="icon-btn" onclick="cancelSub(${s.id})" title="Cancel">🗑️</button></div>
+  </div>`;
+}
+
+function savingsItemHTML(icon, bg, title, sub, tagClass, tagText) {
+  return `<div class="saving-item">
+    <div class="saving-icon" style="background:${bg}">${icon}</div>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">${title}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${sub}</div>
+    </div>
+    <span class="tag ${tagClass}">${tagText}</span>
+  </div>`;
+}
+
+function afterDashboard() {
+  setTimeout(() => {
+    const dc = document.getElementById('donut-chart');
+    if (!dc) return;
+    destroyChart('donut');
+    const cats = catBreakdown();
+    const keys = Object.keys(cats);
+    chartInstances['donut'] = new Chart(dc, {
+      type: 'doughnut',
+      data: {
+        labels: keys,
+        datasets: [{ data: keys.map(k=>cats[k]), backgroundColor: keys.map(k=>CAT_COLORS[k]||'#888'), borderWidth: 3, borderColor: '#1a1f30' }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: i=>`$${i.parsed.toFixed(2)}/mo` } } }
+      }
+    });
+  }, 50);
+}
+
+// ══════════════════════════════════════════
+//  SUBSCRIPTIONS PAGE
+// ══════════════════════════════════════════
+function subsHTML() {
+  const sorted = [...active()].sort((a,b) => b.price - a.price);
+  return `<div class="card">
+    <div class="card-title">
+      All Subscriptions
+      <div style="display:flex;gap:8px">
+        <span class="card-title-val">${sorted.length} active · $${total().toFixed(2)}/mo</span>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add</button>
+      </div>
+    </div>
+    ${sorted.map(s => `
+      <div class="sub-item">
+        <div class="sub-icon" style="background:${s.color}22;color:${s.color};font-size:18px">${s.icon}</div>
+        <div class="sub-info">
+          <div class="sub-name">${s.name}</div>
+          <div class="sub-meta">${s.cat} · Renews day ${s.day} · Last used ${s.lastUsed===0?'today':s.lastUsed+'d ago'}</div>
+        </div>
+        ${s.lastUsed>60?`<span class="tag tag-red">🧛 Dead</span>`:s.lastUsed>30?`<span class="tag tag-amber">Unused</span>`:s.lastUsed>7?`<span class="tag tag-blue">Occasional</span>`:`<span class="tag tag-green">Active</span>`}
+        <div class="sub-price">$${s.price.toFixed(2)}<span>/mo</span></div>
+        <div class="sub-actions"><button class="icon-btn" onclick="cancelSub(${s.id})">🗑️</button></div>
+      </div>`).join('')}
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;color:var(--text2)">Yearly projection: <b style="color:var(--text)">$${(total()*12).toFixed(0)}</b></span>
+      <span style="font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--blue)">$${total().toFixed(2)}/mo</span>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  VAMPIRES PAGE
+// ══════════════════════════════════════════
+function vampiresHTML() {
+  const v = vampires();
+  const waste = v.reduce((a,s)=>a+s.price,0);
+  return `
+  <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+    <div class="metric-card mc-red">
+      <div class="mc-icon">🧛</div>
+      <div class="mc-label">Vampire Count</div>
+      <div class="mc-value" style="color:var(--red)">${v.length}</div>
+      <div class="mc-hint">Services unused 30+ days</div>
+    </div>
+    <div class="metric-card mc-amber">
+      <div class="mc-icon">💸</div>
+      <div class="mc-label">Monthly Waste</div>
+      <div class="mc-value" style="color:var(--amber)">$${waste.toFixed(2)}</div>
+      <div class="mc-hint">Money going nowhere</div>
+    </div>
+    <div class="metric-card mc-green">
+      <div class="mc-icon">💰</div>
+      <div class="mc-label">Yearly Savings</div>
+      <div class="mc-value" style="color:var(--green)">$${(waste*12).toFixed(0)}</div>
+      <div class="mc-hint">If you cancel all vampires</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Vampire Subscriptions <span class="card-title-val" style="color:var(--red)">${v.length} detected</span></div>
+    ${v.length===0 ? `<div style="text-align:center;padding:40px;color:var(--green);font-size:16px">🎉 No vampire subscriptions! You're in great shape.</div>` : ''}
+    ${v.map(s=>`
+      <div class="alert-item alert-urgent">
+        <span style="font-size:24px">${s.icon}</span>
+        <div style="flex:1">
+          <div class="alert-title">${s.name}</div>
+          <div class="alert-sub" style="font-size:12px;line-height:1.6">
+            Not used in <b style="color:var(--red)">${s.lastUsed} days</b> · 
+            Costing you <b style="color:var(--red)">$${s.price.toFixed(2)}/mo</b> · 
+            Wasted so far: <b>$${(s.price*(s.lastUsed/30)).toFixed(2)}</b>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <span class="tag tag-red">${s.lastUsed}d unused</span>
+          <button class="btn btn-red" onclick="cancelSub(${s.id})" style="font-size:11px;padding:5px 14px">Cancel & Save $${s.price.toFixed(2)}</button>
+        </div>
+      </div>`).join('')}
+    ${v.length>1?`<button class="btn btn-red" style="width:100%;margin-top:12px;font-size:13px" onclick="cancelAll()">🧛 Cancel All Vampires — Save $${waste.toFixed(2)}/mo</button>`:''}
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  RENEWALS PAGE
+// ══════════════════════════════════════════
+function renewalsHTML() {
+  const today = new Date().getDate();
+  const sortedByDay = [...active()].sort((a,b)=>{
+    const da=(a.day-today+31)%31, db=(b.day-today+31)%31;
+    return da-db;
+  });
+  const groups = [{label:'🚨 Next 2 days',items:sortedByDay.filter(s=>{const d=s.day-today;return d>=0&&d<=2;})},{label:'⚠️ This week',items:sortedByDay.filter(s=>{const d=s.day-today;return d>2&&d<=7;})},{label:'📅 This month',items:sortedByDay.filter(s=>{const d=s.day-today;return d>7&&d<=30;})},];
+  return groups.map(g=>g.items.length===0?'':`
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">${g.label} <span class="card-title-val">${g.items.length} renewal${g.items.length!==1?'s':''}</span></div>
+      ${g.items.map(s=>{
+        const d=s.day-today;
+        return `<div class="sub-item">
+          <div class="sub-icon" style="background:${s.color}22;color:${s.color};font-size:18px">${s.icon}</div>
+          <div class="sub-info"><div class="sub-name">${s.name}</div><div class="sub-meta">${s.cat} · Day ${s.day} of month</div></div>
+          <span class="tag ${d<=2?'tag-red':d<=7?'tag-amber':'tag-blue'}">${d===0?'Today!':d===1?'Tomorrow':d+'d'}</span>
+          <div class="sub-price">$${s.price.toFixed(2)}<span>/mo</span></div>
+        </div>`;
+      }).join('')}
+    </div>`).join('') || `<div class="card"><div class="empty">No renewals data available</div></div>`;
+}
+
+// ══════════════════════════════════════════
+//  AI PAGE
+// ══════════════════════════════════════════
+
+/* UI HTML */
+function aiHTML() {
+  return `<div class="card">
+    <div class="card-title">
+      AI Financial Advisor 
+      <span style="font-size:12px;color:#43e97b;">● Offline Mode</span>
+    </div>
+
+    <div class="chat-wrap" id="chat-box">
+      ${aiMessages.map(m => `
+        <div class="msg ${m.role==='user'?'msg-user':'msg-bot'}">
+          ${m.text}
+        </div>`).join('')}
+      ${aiLoading ? `
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>` : ''}
+    </div>
+
+    <div class="chat-input-row">
+      <input class="chat-inp" id="chat-inp" placeholder="Type or click below..." 
+        onkeydown="if(event.key==='Enter'){sendAI();}">
+      <button class="chat-send" onclick="sendAI()">Send ↗</button>
+    </div>
+
+    <div class="quick-btns" style="margin-top:10px">
+      ${[
+        '💸 Find my biggest waste',
+        '🔗 Which subs can I bundle?',
+        '📊 How much am I wasting yearly?',
+        '🎯 Give me a savings plan',
+        '🧛 Tell me about my vampires',
+        '📈 Am I spending too much?'
+      ].map(q => `<button class="quick-btn" onclick="quickAsk('${q}')">${q}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* Scroll chat */
+function scrollChat() {
+  setTimeout(() => {
+    const c = document.getElementById('chat-box');
+    if (c) c.scrollTop = c.scrollHeight;
+  }, 50);
+}
+
+/* Local AI logic */
+function getLocalReply(msg) {
+  msg = msg.toLowerCase();
+
+  if (msg.includes("waste"))
+    return "💸 Your biggest waste is overlapping subscriptions like Netflix & Prime.";
+
+  if (msg.includes("bundle"))
+    return "🔗 Use family plans or combo bundles to reduce cost.";
+
+  if (msg.includes("yearly"))
+    return "📊 You're wasting around ₹8,000–₹12,000 yearly.";
+
+  if (msg.includes("plan"))
+    return "🎯 Cancel unused apps + switch to yearly billing.";
+
+  if (msg.includes("vampire"))
+    return "🧛 Auto-renewals and forgotten trials are your money vampires.";
+
+  if (msg.includes("spending"))
+    return "📈 Yes — you're overspending by ~20–30%.";
+
+  return "🤖 Try clicking one of the suggested questions 👇";
+}
+
+/* Send message */
+function sendAI() {
+  const inp = document.getElementById('chat-inp');
+  const msg = inp?.value?.trim();
+  if (!msg || aiLoading) return;
+
+  inp.value = '';
+  aiMessages.push({ role: 'user', text: msg });
+
+  aiLoading = true;
+  renderPage('ai');
+  scrollChat();
+
+  setTimeout(() => {
+    const reply = getLocalReply(msg);
+    aiMessages.push({ role: 'bot', text: reply });
+
+    aiLoading = false;
+    renderPage('ai');
+    scrollChat();
+  }, 500);
+}
+
+/* Quick buttons */
+function quickAsk(q) {
+  const inp = document.getElementById('chat-inp');
+  if (inp) {
+    inp.value = q;
+    sendAI();
+  }
+}
+
+// ══════════════════════════════════════════
+//  IMPORT PAGE
+// ══════════════════════════════════════════
+function importHTML() {
+  return `<div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">📋 Paste Bank Statement / CSV</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">Paste your bank transaction history below. ChatGPT will automatically detect all recurring subscription charges.</p>
+        <div class="form-group">
+          <textarea class="form-inp" id="csv-input" style="height:120px;font-family:'JetBrains Mono',monospace;font-size:12px" placeholder="01/05 NETFLIX.COM -$15.99&#10;01/05 SPOTIFY PREMIUM -$10.99&#10;01/08 GYM MEMBERSHIP -$45.00..."></textarea>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="importCSV()">🤖 Detect Subscriptions with ChatGPT</button>
+        <div id="csv-result" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ Manual Quick-Add</div>
+        <div style="display:grid;grid-template-columns:1fr 90px;gap:10px;margin-bottom:10px">
+          <input class="form-inp" id="quick-name" placeholder="Service name (e.g. Netflix)">
+          <input class="form-inp" id="quick-price" type="number" placeholder="$0.00" min="0" step="0.01">
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="quickAdd()">Add Subscription</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function importCSV() {
+  const text = document.getElementById('csv-input')?.value?.trim();
+  if (!text) { toast('Paste some text first', 'amber'); return; }
+  const el = document.getElementById('csv-result');
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)">ChatGPT is analyzing...</div>`;
+  
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "Extract subscriptions from text. Return ONLY a valid JSON array. Schema: [{\"name\": string, \"price\": number, \"category\": string}]. Categories must be: Entertainment, Fitness, Music, Software, Cloud, Productivity, Education." },
+          { role: "user", content: text }
+        ],
+        response_format: { type: "json_object" }
+      })
+    });
+    const data = await res.json();
+    const raw = JSON.parse(data.choices[0].message.content);
+    const parsed = Array.isArray(raw) ? raw : (raw.subscriptions || []);
+
+    if (!parsed.length) { el.innerHTML=`<div class="alert-item alert-warn">No subs detected</div>`; return; }
+    parsed.forEach(s => {
+      const cat = s.category||'Software';
+      SUBS = [...SUBS, { id:Date.now()+Math.random(), name:s.name, price:parseFloat(s.price)||0, cat, icon:CAT_ICONS[cat]||'💳', color:CAT_COLORS[cat]||'#4f8ef7', day:new Date().getDate(), lastUsed:0, active:true }];
+    });
+    save(); updateNav();
+    el.innerHTML = `<div class="alert-item alert-info">✅ Added ${parsed.length} subscriptions</div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="alert-item alert-urgent">Parse error</div>`;
+  }
+}
+
+function quickAdd() {
+  const name  = document.getElementById('quick-name')?.value?.trim();
+  const price = parseFloat(document.getElementById('quick-price')?.value) || 0;
+  if (!name || !price) { toast('Enter name and price', 'amber'); return; }
+  SUBS = [...SUBS, { id:Date.now(), name, price, cat:'Software', icon:'💳', color:'#4f8ef7', day:new Date().getDate(), lastUsed:0, active:true }];
+  save(); updateNav();
+  document.getElementById('quick-name').value = '';
+  document.getElementById('quick-price').value = '';
+  toast(`${name} added!`, 'green');
+}
+
+// ══════════════════════════════════════════
+//  HEALTH PAGE
+// ══════════════════════════════════════════
+function healthHTML() {
+  const sc = healthScore();
+  const t = total(), v = vampires();
+  const cats = catBreakdown();
+  const maxCat = Math.max(...Object.values(cats));
+  const metrics = [
+    { label:'Subscription count', val:active().length, disp:active().length, score:active().length<=8?100:active().length<=12?65:35 },
+    { label:'Vampire subs',       val:v.length,         disp:v.length,         score:v.length===0?100:v.length<=2?60:20 },
+    { label:'Monthly spend',      val:'$'+t.toFixed(0), disp:t,                score:t<100?100:t<200?75:t<300?50:30 },
+  ];
+  const badges = [
+    { icon:'🔍', label:'Auditor',       desc:'Checked your subs',     earned:true },
+    { icon:'💰', label:'Saver',         desc:'Zero vampire subs',     earned:v.length===0 },
+    { icon:'🧛', label:'Vampire Slayer',desc:'Cancelled a vampire',   earned:SUBS.filter(s=>!s.active).length>0 },
+    { icon:'⚡', label:'Power User',     desc:'10+ subscriptions',     earned:active().length>=10 },
+    { icon:'🎯', label:'Optimizer',     desc:'Score above 80',         earned:sc>=80 },
+    { icon:'📊', label:'Analyst',       desc:'Used analytics',         earned:true },
+  ];
+
+  return `<div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Financial Health Score</div>
+        <div class="score-display">
+          <div class="score-number" style="color:${sc>=80?'var(--green)':sc>=60?'var(--amber)':'var(--red)'}">${sc}</div>
+          <div class="score-label">out of 100 · ${sc>=80?'🏆 Excellent':sc>=60?'⚠️ Fair':'🚨 Critical'}</div>
+          <div class="score-bar"><div class="score-fill" style="width:${sc}%;background:${sc>=80?'var(--green)':sc>=60?'var(--amber)':'var(--red)'}"></div></div>
+        </div>
+        ${metrics.map(m=>`
+          <div class="health-row">
+            <div class="health-label" style="font-size:12px;color:var(--text2)">${m.label}</div>
+            <div style="flex:1"><div class="progress"><div class="progress-fill" style="width:${m.score}%;background:${m.score>=80?'var(--green)':m.score>=60?'var(--amber)':'var(--red)'}"></div></div></div>
+            <div class="health-val" style="color:${m.score>=80?'var(--green)':m.score>=60?'var(--amber)':'var(--red)'}">${m.val}</div>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">🏆 Badges</div>
+        <div class="badges-grid">
+          ${badges.map(b=>`
+            <div class="badge-item ${b.earned?'badge-earned':'badge-locked'}">
+              <div class="badge-icon">${b.icon}</div>
+              <div class="badge-name">${b.label}</div>
+              <div style="font-size:10px;color:var(--text3)">${b.desc}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">💰 Category Spending</div>
+        ${Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+          <div class="spend-row">
+            <div class="spend-label">${CAT_ICONS[c]||''} ${c}</div>
+            <div style="flex:1"><div class="progress"><div class="progress-fill" style="width:${Math.round(v/maxCat*100)}%;background:${CAT_COLORS[c]||'#888'}"></div></div></div>
+            <div class="spend-val">$${v.toFixed(0)}</div>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">💡 Recommendations</div>
+        ${v.length>0?`<div class="alert-item alert-urgent" style="margin-bottom:10px"><span style="font-size:20px">🧛</span><div><div class="alert-title">Cancel ${v.length} vampire subscription${v.length!==1?'s':''}</div><div class="alert-sub">Save $${v.reduce((a,s)=>a+s.price,0).toFixed(2)}/mo instantly</div></div></div>`:''}
+        <div class="alert-item alert-info" style="margin-bottom:10px"><span style="font-size:20px">🔗</span><div><div class="alert-title">Bundle entertainment services</div><div class="alert-sub">Disney+/Hulu/ESPN bundle could save $10/mo</div></div></div>
+        <div class="alert-item alert-warn"><span style="font-size:20px">📅</span><div><div class="alert-title">Annual billing discount</div><div class="alert-sub">Switch to yearly plans to save 15–20%</div></div></div>
+        <div style="margin-top:14px;padding:14px;background:var(--bg3);border-radius:12px;text-align:center">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Potential annual savings</div>
+          <div style="font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--green)">$${((v.reduce((a,s)=>a+s.price,0)+16)*12).toFixed(0)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Vampires + bundling + annual billing</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  ANALYTICS PAGE
+// ══════════════════════════════════════════
+function analyticsHTML() {
+  const t = total();
+  const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'];
+  const trendData = [t*.72,t*.78,t*.83,t*.88,t*.93,t*.98,t].map(v=>+v.toFixed(2));
+  const cats = catBreakdown();
+  return `<div class="grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-title">6-Month Spending Trend <span class="card-title-val" style="color:var(--red)">+28% growth</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="trend-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Spending by Category</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="bar-chart"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">📊 Key Metrics</div>
+      ${[
+        ['Daily cost','$'+(t/30).toFixed(2),'var(--blue)'],
+        ['Yearly total','$'+(t*12).toFixed(0),'var(--purple)'],
+        ['Avg per sub','$'+(t/active().length).toFixed(2),'var(--green)'],
+        ['Waste (vampires)','$'+vampires().reduce((a,s)=>a+s.price,0).toFixed(2),'var(--red)'],
+      ].map(([l,v,c])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text2)">${l}</span><span style="font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${c}">${v}</span></div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="card-title">📈 Waste Projection</div>
+      ${[3,6,12].map(m=>{const waste=vampires().reduce((a,s)=>a+s.price,0)*m;return`<div style="padding:10px;background:var(--bg3);border-radius:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--text2)">${m} month${m>1?'s':''}</span><span style="font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--red)">$${waste.toFixed(2)}</span></div>`;}).join('')}
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">If vampire subscriptions are not cancelled</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🥧 Category Split</div>
+      ${Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="width:10px;height:10px;border-radius:2px;background:${CAT_COLORS[c]||'#888'};flex-shrink:0"></span>
+          <span style="font-size:12px;color:var(--text2);flex:1">${CAT_ICONS[c]||''} ${c}</span>
+          <span style="font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace">$${v.toFixed(2)}</span>
+          <span style="font-size:11px;color:var(--text3)">${Math.round(v/total()*100)}%</span>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function afterAnalytics() {
+  const t = total();
+  const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'];
+  const trendData = [t*.72,t*.78,t*.83,t*.88,t*.93,t*.98,t].map(v=>+v.toFixed(2));
+  const cats = catBreakdown();
+  setTimeout(()=>{
+    const tc = document.getElementById('trend-chart');
+    if (tc) {
+      destroyChart('trend');
+      chartInstances['trend'] = new Chart(tc, {
+        type:'line',
+        data:{ labels:months, datasets:[{data:trendData,borderColor:'#4f8ef7',backgroundColor:'rgba(79,142,247,.12)',fill:true,tension:.45,pointRadius:5,pointBackgroundColor:'#4f8ef7',pointBorderColor:'#1a1f30',pointBorderWidth:2,borderWidth:2}]},
+        options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`$${i.parsed.y.toFixed(2)}`}}}, scales:{ x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8892b0',font:{size:11}}}, y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8892b0',font:{size:11},callback:v=>'$'+v}} }}
+      });
+    }
+    const bc = document.getElementById('bar-chart');
+    if (bc) {
+      destroyChart('bar');
+      const keys = Object.keys(cats);
+      chartInstances['bar'] = new Chart(bc, {
+        type:'bar',
+        data:{ labels:keys.map(k=>CAT_ICONS[k]+' '+k), datasets:[{data:keys.map(k=>cats[k]),backgroundColor:keys.map(k=>CAT_COLORS[k]+'bb'),borderColor:keys.map(k=>CAT_COLORS[k]),borderWidth:1,borderRadius:6}]},
+        options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`$${i.parsed.y.toFixed(2)}`}}}, scales:{ x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8892b0',font:{size:10}}}, y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8892b0',font:{size:11},callback:v=>'$'+v}} }}
+      });
+    }
+  }, 50);
+}
+
+// ══════════════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════════════
+function cancelSub(id) {
+  const s = SUBS.find(x=>x.id===id);
+  SUBS = SUBS.map(x => x.id===id ? {...x,active:false} : x);
+  save(); updateNav();
+  if (s) toast(`${s.name} cancelled — saving $${s.price.toFixed(2)}/mo`, 'green');
+  renderPage(currentPage);
+}
+
+function cancelAll() {
+  const v = vampires();
+  const saved = v.reduce((a,s)=>a+s.price,0);
+  v.forEach(s => { SUBS = SUBS.map(x => x.id===s.id ? {...x,active:false} : x); });
+  save(); updateNav();
+  toast(`Cancelled ${v.length} vampires — saving $${saved.toFixed(2)}/mo!`, 'green');
+  renderPage(currentPage);
+}
+
+function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
+function closeModal() { document.getElementById('add-modal').classList.remove('open'); }
+
+function addSub() {
+  const name  = document.getElementById('inp-name').value.trim();
+  const price = parseFloat(document.getElementById('inp-price').value) || 0;
+  const cat   = document.getElementById('inp-cat').value;
+  const day   = parseInt(document.getElementById('inp-day').value) || new Date().getDate();
+  if (!name || !price) { toast('Please enter a name and price', 'amber'); return; }
+  SUBS = [...SUBS, { id:Date.now(), name, price, cat, icon:CAT_ICONS[cat]||'💳', color:CAT_COLORS[cat]||'#4f8ef7', day, lastUsed:0, active:true }];
+  save(); closeModal(); updateNav();
+  toast(`${name} added — $${price.toFixed(2)}/mo`, 'green');
+  renderPage(currentPage);
+}
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+function toast(msg, type='blue') {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `${type==='green'?'✅':type==='amber'?'⚠️':'ℹ️'} ${msg}`;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateY(8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); }, 3000);
+}
+
+// ══════════════════════════════════════════
+//  CHART UTILS
+// ══════════════════════════════════════════
+function destroyChart(key) {
+  if (chartInstances[key]) { try{ chartInstances[key].destroy(); }catch(e){} delete chartInstances[key]; }
+}
+function destroyCharts() {
+  Object.keys(chartInstances).forEach(k=>destroyChart(k));
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+updateNav();
+renderPage('dashboard');
+afterDashboard();
+</script>
+</body>
+</html>
