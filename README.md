@@ -1,12 +1,6 @@
 # 🚀 SubAudit Pro  
 ### 💡 Smart Subscription Management & Expense Analyzer  
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Backend-Python-blue?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Frontend-HTML%20%7C%20CSS-orange?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge"/>
-</p>
 
 ---
 
